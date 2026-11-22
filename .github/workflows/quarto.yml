@@ -1,1 +1,33 @@
 
+name: sprawozdanie-pdf
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          tinytex: true
+
+      - name: Render PDF (wykonuje notatnik od zera)
+        run: quarto render cyklogeneza.ipynb --to pdf --execute
+        env:
+          NUMBA_THREADING_LAYER: workqueue
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sprawozdanie-pdf
+          path: cyklogeneza.pdf
+          retention-days: 90
