@@ -1,0 +1,39 @@
+name: quarto
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          tinytex: true
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install nbclient ipykernel matplotlib open-atmos-jupyter-utils PyMPDATA
+          python -m ipykernel install --user --name global_python --display-name "Python (global_python)"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin poppler-utils
+
+      - name: Render report
+        run: quarto render sprawozdanie.qmd --to pdf --execute
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sprawozdanie-pdf
+          path: sprawozdanie.pdf
+
+      - name: Check page limit (max 2 pages)
+        run: |
+          pages=$(pdfinfo sprawozdanie.pdf | awk '/^Pages:/ {print $2}')
+          echo "Liczba stron: $pages"
+          if [ "$pages" -gt 2 ]; then echo "::error::PDF ma $pages stron (limit 2)"; exit 1; fi
